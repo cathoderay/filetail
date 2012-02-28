@@ -1,6 +1,11 @@
 # filetail.py
 # Copyright (C) 2005 by The Trustees of the University of Pennsylvania
-# Author: Jon Moore
+# Original author: Jon Moore
+#
+# Note: The whole idea of this code was from Jon Moore.
+# I found it here -> (http://code.activestate.com/recipes/436477-filetailpy/)
+# Then, I took the code and made some changes to suit better my requirements.
+#
 
 """
 Module to allow for reading lines from a continuously-growing file (such as
@@ -28,13 +33,16 @@ from os.path import abspath
 from stat import ST_SIZE
 from time import sleep, time
 
+
 class Tail(object):
     """The Tail monitor object."""
     
     def __init__(self, path, only_new = False,
+                 seek = 0, #jump to line number
                  min_sleep = 1,
                  sleep_interval = 1,
-                 max_sleep = 60):
+                 max_sleep = 60,
+                 cache_size=128):
         """Initialize a tail monitor.
              path: filename to open
              only_new: By default, the tail monitor will start reading from
@@ -58,20 +66,26 @@ class Tail(object):
         """
 
         # remember path to file in case I need to reopen
+        self.cache_size = cache_size
         self.path = abspath(path)
         self.f = open(self.path,"r")
         self.min_sleep = min_sleep * 1.0
         self.sleep_interval = sleep_interval * 1.0
         self.max_sleep = max_sleep * 1.0
+        file_len = stat(path)[ST_SIZE]
         if only_new:
-            # seek to current end of file
-            file_len = stat(path)[ST_SIZE]
+            #seek to current end of file
             self.f.seek(file_len)
+        if seek > 0:
+            self.seek_bytes(seek)
         self.pos = self.f.tell()        # where am I in the file?
         self.last_read = time()         # when did I last get some data?
         self.queue = []                 # queue of lines that are ready
         self.window = []                # sliding window for dynamically
                                         # adjusting the sleep_interval
+
+    def seek_bytes(self, bs):
+        self.f.seek(bs)
 
     def _recompute_rate(self, n, start, stop):
         """Internal function for recomputing the sleep interval. I get
@@ -105,16 +119,28 @@ class Tail(object):
             if self.sleep_interval < self.min_sleep:
                 self.sleep_interval = self.min_sleep
 
+    def read_real_line(self):
+        """Guarantees that only complete lines (with \n) or ""
+        are retrieved without advancing file cursor in incomplete
+        lines (preventing lines being written to be lost).
+        """
+        pos = self.f.tell()
+        line = self.f.readline()
+        if (not line == "" and not line.endswith("\n")):
+            self.f.seek(pos)
+            return ""
+        return line
+
     def _fill_cache(self):
         """Internal method for grabbing as much data out of the file as is
         available and caching it for future calls to nextline(). Returns
         the number of lines just read.
         """
         old_len = len(self.queue)
-        line = self.f.readline()
-        while line != "":
+        line = self.read_real_line()
+        while line != "" and len(self.queue) < self.cache_size:
             self.queue.append(line)
-            line = self.f.readline()
+            line = self.read_real_line()
         # how many did we just get?
         num_read = len(self.queue) - old_len
         if num_read > 0:
@@ -194,4 +220,3 @@ class Tail(object):
             pass
         """
         return self.nextline()
-    
