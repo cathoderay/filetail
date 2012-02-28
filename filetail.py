@@ -6,6 +6,9 @@
 # I found it here -> (http://code.activestate.com/recipes/436477-filetailpy/)
 # Then, I took the code and made some changes to suit better my requirements.
 #
+# Last changes: Feb, 2012
+# Second author: Ronald Kaiser
+
 
 """
 Module to allow for reading lines from a continuously-growing file (such as
