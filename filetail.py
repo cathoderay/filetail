@@ -1,14 +1,7 @@
 # filetail.py
 # Copyright (C) 2005 by The Trustees of the University of Pennsylvania
-# Original author: Jon Moore
+# Author: Jon Moore
 #
-# Note: The whole idea of this code was from Jon Moore.
-# I found it here -> (http://code.activestate.com/recipes/436477-filetailpy/)
-# Then, I took the code and made some changes to suit better my requirements.
-#
-# Last changes: Feb, 2012
-# Second author: Ronald Kaiser
-
 
 """
 Module to allow for reading lines from a continuously-growing file (such as
@@ -127,10 +120,10 @@ class Tail(object):
         are retrieved without advancing file cursor in incomplete
         lines (preventing lines being written to be lost).
         """
-        pos = self.f.tell()
+        self.last_pos = self.f.tell()
         line = self.f.readline()
         if (not line == "" and not line.endswith("\n")):
-            self.f.seek(pos)
+            self.f.seek(self.last_pos)
             return ""
         return line
 
@@ -141,9 +134,13 @@ class Tail(object):
         """
         old_len = len(self.queue)
         line = self.read_real_line()
+        to_seek = False
         while line != "" and len(self.queue) < self.cache_size:
             self.queue.append(line)
             line = self.read_real_line()
+            to_seek = True
+        if to_seek: self.f.seek(self.last_pos)
+        
         # how many did we just get?
         num_read = len(self.queue) - old_len
         if num_read > 0:
