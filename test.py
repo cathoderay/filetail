@@ -62,6 +62,7 @@ class TestFileTail(unittest.TestCase):
         self.assertEqual(2, len(threading.enumerate()))
 
         #waits to filetail detects rotating and processes new content
+        #rotating is detected after max_sleep seconds
         time.sleep(6)
 
         #asserts that thread have died
