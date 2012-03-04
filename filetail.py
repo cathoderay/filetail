@@ -7,7 +7,7 @@
 # Then, I took the code and made some changes to suit better my requirements and
 # added some tests.
 #
-# Last changes: Feb, 2012
+# Last changes: March, 2012
 # Second author: Ronald Kaiser
 #  
 
