@@ -122,14 +122,14 @@ class Tail(object):
             if self.sleep_interval < self.min_sleep:
                 self.sleep_interval = self.min_sleep
 
-    def read_real_line(self):
-        """Guarantees that only complete lines (with \n) or ""
-        are retrieved without advancing file cursor in incomplete
-        lines (preventing lines being written to be lost).
+    def _read_line(self):
+        """Internal method that guarantees that only complete lines 
+        (with \n) are retrieved without advancing file cursor in incomplete
+        lines -- without \n -- (preventing lines being written to be lost).
         """
         self.last_pos = self.f.tell()
         line = self.f.readline()
-        if (not line == "" and not line.endswith("\n")):
+        if not line.endswith("\n"):
             self.f.seek(self.last_pos)
             return ""
         return line
@@ -140,12 +140,14 @@ class Tail(object):
         the number of lines just read.
         """
         old_len = len(self.queue)
-        line = self.read_real_line()
+        line = self._read_line()
         to_seek = False
         while line != "" and len(self.queue) < self.cache_size:
             self.queue.append(line)
-            line = self.read_real_line()
+            line = self._read_line()
             to_seek = True
+
+        # back cursor after exiting while, because of the last line
         if to_seek: self.f.seek(self.last_pos)
         
         # how many did we just get?
