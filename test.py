@@ -33,17 +33,20 @@ class TestFileTail(unittest.TestCase):
 
     def test_rotating_file(self):
         class LinesProcessor(threading.Thread):
-            def __init__(self, path):
+            def __init__(self, path, queue):
+                self.queue = queue
                 self.tail = filetail.Tail(path, max_sleep=5)
                 threading.Thread.__init__(self)
 
             def run(self):
                 while True:
                     line = self.tail.nextline()
-                    if line.startswith('42'):
+                    self.queue.put(line)
+                    if line.startswith('50'):
                         break
         
-        processor = LinesProcessor(self.filepath)  
+        queue = Queue.Queue()
+        processor = LinesProcessor(self.filepath, queue)  
         processor.start()
 
         #write something in the file
@@ -59,11 +62,18 @@ class TestFileTail(unittest.TestCase):
         self.assertEqual(2, len(threading.enumerate()))
 
         #waits to filetail detects rotating
-        time.sleep(6)
-            
+        time.sleep(7)
+
         #asserts that thread have died
         self.assertEqual(1, len(threading.enumerate()))
 
+        #getting read lines
+        reads = []
+        while queue.qsize() > 0: 
+            reads.append(int(queue.get().strip()))
+
+        #asserts all lines were delivered from filetail 
+        self.assertEqual(range(0, 51), reads)
 
 if __name__ == '__main__':
     unittest.main()
