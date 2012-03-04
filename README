@@ -1,1 +1,18 @@
-filetail in python
+Filetail in python
+
+
+How to use:
+-----------
+
+    import filetail
+
+    tail = filetail.Tail("/var/log/wonderful.log")
+    for line in tail:
+        print line
+
+
+Features:
+---------
+* simple to use (as an iterator)
+* detects rotating
+* tries to adjust the rate of readings
