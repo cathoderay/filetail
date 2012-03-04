@@ -57,6 +57,9 @@ class TestFileTail(unittest.TestCase):
         #write things in new file
         os.system('seq 42 50 > %s' % self.filepath)
         
+        #asserts that thread is running
+        self.assertEqual(2, len(threading.enumerate()))
+
         #waits to filetail detects rotating
         time.sleep(6)
             
