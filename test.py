@@ -61,8 +61,8 @@ class TestFileTail(unittest.TestCase):
         #asserts that thread is running
         self.assertEqual(2, len(threading.enumerate()))
 
-        #waits to filetail detects rotating
-        time.sleep(7)
+        #waits to filetail detects rotating and processes new content
+        time.sleep(6)
 
         #asserts that thread have died
         self.assertEqual(1, len(threading.enumerate()))
