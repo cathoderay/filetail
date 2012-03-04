@@ -33,8 +33,7 @@ class TestFileTail(unittest.TestCase):
 
     def test_rotating_file(self):
         class LinesProcessor(threading.Thread):
-            def __init__(self, path, queue):
-                self.queue = Queue.Queue()
+            def __init__(self, path):
                 self.tail = filetail.Tail(path, max_sleep=5)
                 threading.Thread.__init__(self)
 
@@ -44,8 +43,7 @@ class TestFileTail(unittest.TestCase):
                     if line.startswith('42'):
                         break
         
-        queue = Queue.Queue()
-        processor = LinesProcessor(self.filepath, queue)  
+        processor = LinesProcessor(self.filepath)  
         processor.start()
 
         #write something in the file
