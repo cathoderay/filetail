@@ -43,9 +43,9 @@ class TestFileTail(unittest.TestCase):
                     self.queue.put(line)
                     if line.startswith('50'):
                         break
-        
+
         queue = Queue.Queue()
-        processor = LinesProcessor(self.filepath, queue)  
+        processor = LinesProcessor(self.filepath, queue)
         processor.start()
 
         # write something in the file
@@ -53,10 +53,10 @@ class TestFileTail(unittest.TestCase):
 
         # rotate file
         rotate_file(self.filepath)
-        
+
         # write things in new file
         os.system('seq 42 50 > %s' % self.filepath)
-        
+
         # asserts that thread is running
         self.assertEqual(2, len(threading.enumerate()))
 
@@ -72,14 +72,14 @@ class TestFileTail(unittest.TestCase):
         while queue.qsize() > 0:
             reads.append(int(queue.get().strip()))
 
-        # asserts all lines were delivered from filetail 
+        # asserts all lines were delivered from filetail
         self.assertEqual(range(0, 51), reads)
 
     def test_reading_lines_without_backslash_n(self):
         class LinesProcessor(threading.Thread):
             def __init__(self, path, queue):
                 self.queue = queue
-                self.tail = filetail.Tail(path, max_sleep=1) 
+                self.tail = filetail.Tail(path, max_sleep=1)
                 threading.Thread.__init__(self)
 
             def run(self):
@@ -123,6 +123,36 @@ class TestFileTail(unittest.TestCase):
         # asserting that all lines were read
         self.assertEqual(12, len(result))
         self.assertEqual(range(0, 12), result)
+
+    def test_store_position_in_queue(self):
+        class LinesProcessor(threading.Thread):
+            def __init__(self, path, queue):
+                self.queue = queue
+                self.tail = filetail.Tail(path, max_sleep=1, store_pos=True)
+                threading.Thread.__init__(self)
+
+            def run(self):
+                while True:
+                    (pos, line) = self.tail.nextline()
+                    self.queue.put((pos, line))
+                    if line.startswith('end'):
+                        break
+        queue = Queue.Queue()
+        processor = LinesProcessor(self.filepath, queue)
+        processor.start()
+        result = []
+
+        # write line in file
+        os.system('echo "start" > %s' % self.filepath)
+
+        # time to process
+        time.sleep(0.01)
+
+        # get pos + line
+        self.assertEqual((6, "start\n"), queue.get())
+
+        # write line to finish thread
+        os.system('echo "end" >> %s' % self.filepath)
 
 
 if __name__ == '__main__':

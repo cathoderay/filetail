@@ -46,7 +46,8 @@ class Tail(object):
                  min_sleep = 1,
                  sleep_interval = 1,
                  max_sleep = 60,
-                 cache_size=128):
+                 cache_size=128,
+                 store_pos=False):
         """Initialize a tail monitor.
              path: filename to open
              only_new: By default, the tail monitor will start reading from
@@ -71,6 +72,7 @@ class Tail(object):
 
         # remember path to file in case I need to reopen
         self.cache_size = cache_size
+        self.store_pos = store_pos
         self.path = abspath(path)
         self.f = open(self.path,"r")
         self.min_sleep = min_sleep * 1.0
@@ -132,8 +134,13 @@ class Tail(object):
         line = self.f.readline()
         if not line.endswith("\n"):
             self.f.seek(self.last_pos)
-            return ""
-        return line
+            if not self.store_pos:
+               return ""
+            return (self.f.tell(), "")
+
+        if not self.store_pos:
+            return line
+        return (self.f.tell(), line)
 
     def _fill_cache(self):
         """Internal method for grabbing as much data out of the file as is
@@ -141,11 +148,18 @@ class Tail(object):
         the number of lines just read.
         """
         old_len = len(self.queue)
-        line = self._read_line()
+        if not self.store_pos:
+            line = self._read_line()
+        else:
+            pos, line = self._read_line()
         to_seek = False
         while line != "" and len(self.queue) < self.cache_size:
-            self.queue.append(line)
-            line = self._read_line()
+            if not self.store_pos:
+                self.queue.append(line)
+                line = self._read_line()
+            else:
+                self.queue.append((pos, line))
+                pos, line = self._read_line()
             to_seek = True
 
         # back cursor after exiting while, because of the last line
